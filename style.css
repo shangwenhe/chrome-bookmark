@@ -2,7 +2,7 @@
 
 @font-face {
   font-family: "Arimo";
-  src: url("./Arimo-SemiBold.ttf") format("truetype"); /* chrome、firefox、opera、Safari, Android, iOS 4.2+ */
+  src: url("./Arimo-Bold.ttf") format("truetype"); /* chrome、firefox、opera、Safari, Android, iOS 4.2+ */
   font-weight: bold;
 }
 
@@ -10,13 +10,13 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Microsoft YaHei', sans-serif;
 }
 
 body {
   background-color: #f5f7fa;
   padding: 20px;
   min-height: 100vh;
+  font-family: 'Microsoft YaHei', sans-serif;
 }
 
 .site-container {
@@ -166,10 +166,10 @@ h1 {
   height: 100%;
   pointer-events: none; /* 让鼠标事件穿透提示层 */
   z-index: 999999; /* 确保在最上层 */
-  font-family: Arimo, Arial, sans-serif;
+  font-family: Arimo, Arial, sans-serif !important;
 }
 
-.vimium-hint {
+#vimium-hints .vimium-hint {
   /* 确保绝对定位 */
   position: absolute;
   
@@ -184,14 +184,16 @@ h1 {
   color: #000 !important;
   
   /* 确保字体大小和样式合理 */
-  font-family: Arimo, Arial, sans-serif;
-  font-size: 12px;
-  font-weight: bold;
+    font-size: 12px;
+  font-weight: 800;
   line-height: 1.2;
+  font-family: Arimo, Arial, sans-serif !important;
+
   
   /* 确保适当的内边距 */
   padding: 2.5px 3px 2px;
-  
+  box-shadow: 0 3px 5px #0000004d;
+
   /* 确保正确的布局行为 */
   box-sizing: border-box;
   white-space: nowrap;
