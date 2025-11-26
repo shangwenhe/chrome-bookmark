@@ -1,0 +1,277 @@
+/* 基础样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Microsoft YaHei', sans-serif;
+}
+
+body {
+  background-color: #f5f7fa;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.site-container {
+  max-width: 1800px;
+  margin: 0 auto;
+}
+
+h1 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 22px;
+  padding: 15px 0;
+}
+
+.flex-container {
+  display: flex;
+  gap: 20px;
+}
+
+.bookmarks-section {
+  flex: 3;
+}
+
+.history-section {
+  flex: 4;
+}
+
+.section {
+  position: relative;
+}
+
+.section-content-wrapper {
+  height: 100%;
+}
+
+.sticky-title {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  background: #f5f7fa;
+  color: #333;
+  padding: 12px 15px;
+  font-size: 16px;
+  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 15px;
+  gap: 7px;
+}
+
+.content-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 15px;
+  padding: 0 15px 15px 15px;
+}
+
+.bookmark-folder-title {
+  grid-column: 1 / -1;
+  font-weight: bold;
+  color: #2d3748;
+  margin: 8px 0;
+  padding-left: 10px;
+  border-left: 3px solid #4299e1;
+  font-size: 14px;
+}
+
+/* 书签和历史记录链接的共同容器样式 */
+.bookmark-link, .history-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  color: #4a5568;
+  background: #fff;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* 为链接文本创建容器以处理溢出 */
+.bookmark-link .link-text,
+.history-item .link-text {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bookmark-link:hover, .history-item:hover {
+  background: #f0f2f5;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.favicon {
+  width: 16px;
+  height: 16px;
+  margin-right: 10px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.history-time {
+  font-size: 11px;
+  color: #9f7aea;
+  margin-left: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* 响应式调整 */
+@media (max-width: 1200px) {
+  .flex-container {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  .content-container {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+  h1 {
+    font-size: 20px;
+  }
+  .sticky-title {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .content-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Vimium 提示层基础样式 */
+#vimium-hints {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* 让鼠标事件穿透提示层 */
+  z-index: 999999; /* 确保在最上层 */
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+.vimium-hint {
+  /* 确保绝对定位 */
+  position: absolute;
+  
+  /* 确保有明显的背景色 */
+  background: linear-gradient(#fff785, #ffc542);
+  
+  /* 确保有可见的边框 */
+  border: 1px solid #e3be23;
+  border-radius: 3px;
+  
+  /* 确保有明显的文字颜色 */
+  color: #000 !important;
+  
+  /* 确保字体大小和样式合理 */
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1.2;
+  
+  /* 确保适当的内边距 */
+  padding: 3px 6px;
+  
+  /* 确保正确的布局行为 */
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  
+  /* 确保过渡效果 */
+  transition: opacity 0.2s ease;
+  
+  /* 确保在最上层 */
+  z-index: 999999;
+  
+  /* 确保不会被其他元素遮挡 */
+  pointer-events: auto;
+}
+
+/* Vimium 查找高亮样式 */
+.vimium-find-match {
+  background-color: rgba(255, 255, 0, 0.4);
+  color: #000 !important;
+}
+.vimium-find-current {
+  background-color: rgba(255, 105, 0, 0.6);
+  color: #fff !important;
+}
+
+/* 通知系统样式 */
+#notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 350px;
+}
+
+.notification {
+    background-color: #f0f0f0;
+    border-radius: 6px;
+    padding: 12px 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    font-size: 14px;
+    font-weight: 500;
+    transform: translateX(150%);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    word-wrap: break-word;
+    max-width: 100%;
+}
+
+.notification.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+/* 不同类型通知的样式 */
+.notification-success {
+    background-color: #52c41a;
+    color: white;
+}
+
+.notification-error {
+    background-color: #ff4d4f;
+    color: white;
+}
+
+.notification-warning {
+    background-color: #faad14;
+    color: white;
+}
+
+.notification-info {
+    background-color: #1890ff;
+    color: white;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    #notification-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+    
+    .notification {
+        font-size: 13px;
+        padding: 10px 14px;
+    }
+}

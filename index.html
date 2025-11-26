@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的导航页 (Vimium 增强版)</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="site-container">
+    <h1>我的导航页</h1>
+
+    <div class="flex-container">
+      <!-- 书签区域 -->
+      <div class="section bookmarks-section">
+        <div class="section-content-wrapper">
+          <h2 class="sticky-title"><i class="fas fa-bookmark"></i> 所有书签</h2>
+          <div id="bookmarks-container" class="content-container"></div>
+        </div>
+      </div>
+
+      <!-- 历史记录区域 -->
+      <div class="section history-section">
+        <div class="section-content-wrapper">
+          <h2 class="sticky-title"><i class="fas fa-history"></i> 所有历史记录</h2>
+          <div id="history-container" class="content-container"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vimium 所需的 DOM 元素 -->
+  <div id="vimium-hints"></div>
+
+  <!-- 脚本引入 -->
+  <script src="script.js"></script>
+  <script src="vimium.js"></script>
+</body>
+</html>
