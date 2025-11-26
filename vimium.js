@@ -4,43 +4,64 @@ document.addEventListener('DOMContentLoaded', () => {
   const hintsContainer = document.getElementById('vimium-hints');
 
   let isHintMode = false;
-  let currentHints = [];
+  let currentHints = []; // { element, fullHint }
+  let userInput = '';
 
-  // --- 新的基于计数的提示生成逻辑 ---
-
-  // 字符集，建议使用易于区分和输入的字符
-  // 你可以调整字符的顺序，把更易于输入的放在前面
+  // --- 配置 ---
   const CHAR_SET = 'abcdefghijklmnopqrstuvwxyz';
-  const HINT_BASE = CHAR_SET.length; // 进制数，这里是26进制
+  const HINT_BASE = CHAR_SET.length;
+  const HINT_START_INDEX = 26; // 从索引26开始，即 'aa'
 
   /**
-   * 将数字索引转换为对应的提示字符串 (如 0 -> 'a', 26 -> 'aa')
+   * 将数字索引转换为对应的提示字符串 (如 26 -> 'aa')
    * @param {number} index - 链接的索引 (从0开始)
-   * @returns {string} 生成的提示字符
+   * @returns {string} 生成的小写提示字符
    */
   const generateHintByIndex = (index) => {
     if (index < 0) return '';
-    
     let hint = '';
     do {
-      // 取余得到当前位的字符索引
       const charIndex = index % HINT_BASE;
-      // 将字符插入到结果的最前面
       hint = CHAR_SET[charIndex] + hint;
-      // 整除进入下一位
-      index = Math.floor(index / HINT_BASE) - 1; // -1 是为了让 'a' 对应 0, 'aa' 对应 26
+      index = Math.floor(index / HINT_BASE) - 1;
     } while (index >= 0);
-
     return hint;
   };
-  
-  // --- 逻辑修改结束 ---
 
   const clearHints = () => {
     hintsContainer.innerHTML = '';
     currentHints = [];
+    userInput = '';
     isHintMode = false;
     document.body.style.cursor = 'default';
+  };
+
+  /**
+   * 根据 currentHints 和 userInput 重新渲染所有提示
+   * 已输入的部分会被灰度处理
+   */
+  const renderHints = () => {
+    hintsContainer.innerHTML = '';
+    const inputLen = userInput.length;
+
+    currentHints.forEach(hintObj => {
+      const hintElement = document.createElement('div');
+      hintElement.className = 'vimium-hint';
+
+      // 已输入的部分
+      const dimPart = hintObj.fullHint.substring(0, inputLen);
+      // 未输入的部分
+      const normalPart = hintObj.fullHint.substring(inputLen);
+
+      // 设置HTML内容，实现灰度效果，并转为大写
+      hintElement.innerHTML = `<span class="dim">${dimPart.toUpperCase()}</span><span>${normalPart.toUpperCase()}</span>`;
+      
+      const rect = hintObj.element.getBoundingClientRect();
+      hintElement.style.top = `${rect.top + window.scrollY + 2}px`;
+      hintElement.style.left = `${rect.left + window.scrollX + 2}px`;
+      
+      hintsContainer.appendChild(hintElement);
+    });
   };
 
   const handleScroll = (e) => {
@@ -63,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     isHintMode = true;
     document.body.style.cursor = 'crosshair';
+    userInput = '';
 
     setTimeout(() => {
       const links = document.querySelectorAll('a[href]:not(.bookmark-folder-title):not([href="#"])');
@@ -72,32 +94,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // --- 使用新的基于计数的生成函数 ---
-      links.forEach((link, index) => {
+      currentHints = Array.from(links).map((link, index) => {
+        // 应用你的修改：index + HINT_START_INDEX
+        const fullHint = generateHintByIndex(index + HINT_START_INDEX);
+        return { element: link, fullHint: fullHint };
+      }).filter(hintObj => {
         try {
-          const rect = link.getBoundingClientRect();
-          if (rect.width > 0 && rect.height > 0 &&
-              rect.bottom > 0 && rect.top < window.innerHeight) {
-            
-            // 直接使用链接的索引来生成提示字符
-            const hintText = generateHintByIndex(index+30);
-            
-            const hintElement = document.createElement('div');
-            hintElement.className = 'vimium-hint';
-            hintElement.textContent = hintText;
-            hintElement.style.top = `${rect.top + window.scrollY + 2}px`;
-            hintElement.style.left = `${rect.left + window.scrollX + 2}px`;
-
-            hintsContainer.appendChild(hintElement);
-            currentHints.push({
-              hint: hintText,
-              element: link
-            });
-          }
+          const rect = hintObj.element.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < window.innerHeight;
         } catch (e) {
-          console.error("Error creating hint for link:", link, e);
+          return false;
         }
       });
+
+      renderHints();
 
       if (currentHints.length === 0) {
         clearHints();
@@ -106,61 +116,59 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 0);
   };
 
-  // handleHintInput 和其他函数保持不变
   const handleHintInput = (e) => {
     if (!isHintMode) return;
     const key = e.key.toLowerCase();
+
     if (key === 'escape') {
       clearHints();
       e.preventDefault();
       return;
     }
-    if (e.key.length > 1 && !['backspace', 'delete'].includes(key)) {
+
+    if (key === 'backspace') {
+      if (userInput.length > 0) {
+        userInput = userInput.slice(0, -1);
+        renderHints(); // 直接重新渲染即可，因为 currentHints 没变
+      } else {
+        clearHints();
+      }
+      e.preventDefault();
       return;
     }
 
-    let newHints = [];
-    let exactMatch = null;
-
-    if (key === 'backspace' || key === 'delete') {
-        clearHints();
-        setTimeout(enterHintMode, 0);
-        e.preventDefault();
-        return;
+    if (e.key.length > 1) {
+      return;
     }
-
-    currentHints.forEach(hintObj => {
-      if (hintObj.hint.startsWith(key)) {
-        const newHint = hintObj.hint.substring(key.length);
-        if (newHint === '') {
-          exactMatch = hintObj;
-        } else {
-          newHints.push({ ...hintObj, hint: newHint });
-        }
-      }
+    
+    const newInput = userInput + key;
+    
+    // 过滤出匹配新输入的提示
+    const matchedHints = currentHints.filter(hintObj => {
+      return hintObj.fullHint.startsWith(newInput);
     });
 
+    // 如果没有匹配项，不更新
+    if (matchedHints.length === 0) {
+      e.preventDefault();
+      return;
+    }
+    
+    // 检查是否有完全匹配
+    const exactMatch = matchedHints.find(hintObj => hintObj.fullHint === newInput);
     if (exactMatch) {
       clearHints();
       exactMatch.element.click();
       e.preventDefault();
-    } else if (newHints.length > 0) {
-      hintsContainer.innerHTML = '';
-      newHints.forEach(hintObj => {
-        const hintElement = document.createElement('div');
-        hintElement.className = 'vimium-hint';
-        hintElement.textContent = hintObj.hint;
-        const rect = hintObj.element.getBoundingClientRect();
-        hintElement.style.top = `${rect.top + window.scrollY + 2}px`;
-        hintElement.style.left = `${rect.left + window.scrollX + 2}px`;
-        hintsContainer.appendChild(hintElement);
-      });
-      currentHints = newHints;
-      e.preventDefault();
-    } else {
-      clearHints();
-      e.preventDefault();
+      return;
     }
+
+    // 更新输入并重新渲染
+    userInput = newInput;
+    currentHints = matchedHints; // 只保留匹配的提示
+    renderHints();
+
+    e.preventDefault();
   };
 
   document.addEventListener('keydown', (e) => {
@@ -192,6 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   
+  let scrollTimeout;
   window.addEventListener('scroll', () => {
     if (isHintMode) {
       clearTimeout(scrollTimeout);
@@ -201,5 +210,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  console.log('Vimium 功能已加载。按 \'f\' 打开链接提示，按 \'j/k\' 上下滚动。提示字符现在基于链接位置。');
+  console.log('Vimium 功能已加载。按 \'f\' 打开链接提示，按 \'j/k\' 上下滚动。');
 });
