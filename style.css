@@ -129,6 +129,7 @@ h1 {
   margin-left: 10px;
   white-space: nowrap;
   flex-shrink: 0;
+  display: none;
 }
 
 /* 响应式调整 */

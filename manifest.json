@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "全屏瀑布流导航页 (Vimium 版)",
-  "version": "2.3",
+  "version": "2.6",
   "description": "书签倒序+3天历史+瀑布流布局+Vimium 风格导航",
   "permissions": [
     "bookmarks",
@@ -9,5 +9,8 @@
   ],
   "chrome_url_overrides": {
     "newtab": "index.html"
+  },
+  "background": {
+    // "service_worker": "background.js"
   }
 }
