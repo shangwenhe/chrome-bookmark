@@ -8,9 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let userInput = '';
 
   // --- 配置 ---
-  const CHAR_SET = 'abcdefghijklmnopqrstuvwxyz';
+  const CHAR_SET = 'sadjklewcmpgh';
   const HINT_BASE = CHAR_SET.length;
-  const HINT_START_INDEX = 26; // 从索引26开始，即 'aa'
+  const HINT_START_INDEX = 13*3; // 从索引26开始，即 'aa'
 
   /**
    * 将数字索引转换为对应的提示字符串 (如 26 -> 'aa')
