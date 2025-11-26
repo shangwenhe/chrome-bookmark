@@ -57,8 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
       hintElement.innerHTML = `<span class="dim">${dimPart.toUpperCase()}</span><span>${normalPart.toUpperCase()}</span>`;
       
       const rect = hintObj.element.getBoundingClientRect();
-      hintElement.style.top = `${rect.top + window.scrollY + 2}px`;
-      hintElement.style.left = `${rect.left + window.scrollX + 2}px`;
+      hintElement.style.top = `${rect.top }px`;
+      hintElement.style.left = `${rect.left}px`;
       
       hintsContainer.appendChild(hintElement);
     });

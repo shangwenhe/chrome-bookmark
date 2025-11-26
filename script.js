@@ -18,12 +18,12 @@ document.addEventListener('DOMContentLoaded', () => {
   let hasMoreHistory = true;
 
   // 辅助函数：安全获取主机名
-  function getSafeHostname(url) {
+  function getSafeUrl(url) {
       try {
           if (!url || typeof url !== 'string') {
               return '';
           }
-          return new URL(url).hostname;
+          return new URL(url);
       } catch (error) {
           logError(error, `解析URL: ${url}`);
           return '';
@@ -32,8 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 辅助函数：获取Favicon URL
   function getFaviconUrl(url) {
-      const hostname = getSafeHostname(url);
+      const {origin, hostname} = getSafeUrl(url);
       return hostname ? `https://www.google.com/s2/favicons?domain=${hostname}&sz=16` : '';
+      // return origin ? `${origin}/favicon.ico` : '';
   }
   
   // 处理未捕获的全局错误

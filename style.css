@@ -1,4 +1,11 @@
 /* 基础样式 */
+
+@font-face {
+  font-family: "Arimo";
+  src: url("./Arimo-SemiBold.ttf") format("truetype"); /* chrome、firefox、opera、Safari, Android, iOS 4.2+ */
+  font-weight: bold;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -158,7 +165,7 @@ h1 {
   height: 100%;
   pointer-events: none; /* 让鼠标事件穿透提示层 */
   z-index: 999999; /* 确保在最上层 */
-  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-family: Arimo, Arial, sans-serif;
 }
 
 .vimium-hint {
@@ -176,13 +183,13 @@ h1 {
   color: #000 !important;
   
   /* 确保字体大小和样式合理 */
-  font-family: 'Helvetica Neue', Arial, sans-serif;
-  font-size: 14px;
+  font-family: Arimo, Arial, sans-serif;
+  font-size: 12px;
   font-weight: bold;
   line-height: 1.2;
   
   /* 确保适当的内边距 */
-  padding: 3px 6px;
+  padding: 2.5px 3px 2px;
   
   /* 确保正确的布局行为 */
   box-sizing: border-box;
@@ -278,4 +285,25 @@ h1 {
         font-size: 13px;
         padding: 10px 14px;
     }
+}
+
+.history-time {
+  font-size: 11px;
+  color: #9f7aea;
+  margin-left: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* --- 新增样式 --- */
+.history-date-header {
+  grid-column: 1 / -1; /* 让标题占据整行 */
+  font-weight: bold;
+  color: #2d3748;
+  margin: 15px 0 8px 0; /* 上下外边距，与书签文件夹标题区分开 */
+  padding: 8px 10px;
+  background-color: #e8f4f8; /* 轻微的背景色 */
+  border-left: 3px solid #38b2ac; /* 不同的边框颜色，例如青色 */
+  font-size: 15px;
+  border-radius: 4px; /* 轻微的圆角 */
 }
