@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 存储数据和状态
   let allBookmarks = [];
   let allHistory = [];
-  let bookmarkPage = 0;
+  let groupedHistory = {}; // 新增：分组后的历史记录
   let historyPage = 0;
   let isLoadingBookmarks = false;
   let isLoadingHistory = false;
@@ -94,6 +94,19 @@ document.addEventListener('DOMContentLoaded', () => {
   function removeLoading(element) {
     const loadingElement = element.querySelector('.loading-indicator');
     if (loadingElement) loadingElement.remove();
+  }
+
+  // -------------------------- 新增：日期格式化函数 --------------------------
+  function formatHistoryTime(timestamp) {
+    const date = new Date(timestamp);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hour = date.getHours();
+    // 生成分组键（例如：11月27日14时）
+    const groupKey = `${month} / ${day} ${hour}时`;
+    // 生成显示时间（例如：14:35:22）
+    const displayTime = date.toTimeString().split(' ')[0].substring(0, 8);
+    return { groupKey, displayTime, fullDate: date };
   }
 
   // -------------------------- 书签相关 --------------------------
@@ -204,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // -------------------------- 历史记录相关 --------------------------
+  // -------------------------- 历史记录相关（重点修改）--------------------------
   function initializeHistory() {
     if (!chrome.history) {
       const errorMsg = '无法访问历史记录功能，请确保插件已获得历史记录权限';
@@ -219,9 +232,31 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           removeLoading(historyContainer);
           if (!items) throw new Error('历史记录数据为空');
+          
+          // 过滤最近3天的历史记录并排序
           allHistory = items
             .filter(item => item && item.lastVisitTime >= threeDaysAgo && item.url)
             .sort((a, b) => b.lastVisitTime - a.lastVisitTime);
+
+          // 新增：按小时分组历史记录
+          groupedHistory = {};
+          allHistory.forEach(item => {
+            const { groupKey } = formatHistoryTime(item.lastVisitTime);
+            if (!groupedHistory[groupKey]) {
+              groupedHistory[groupKey] = [];
+            }
+            groupedHistory[groupKey].push(item);
+          });
+
+          // 转换为扁平化的分组列表（包含标题和项目）
+          let flatHistory = [];
+          Object.keys(groupedHistory).forEach(groupKey => {
+            // 添加分组标题
+            flatHistory.push({ type: 'group', groupKey });
+            // 添加该分组下的所有历史记录
+            flatHistory = flatHistory.concat(groupedHistory[groupKey]);
+          });
+          allHistory = flatHistory; // 替换为扁平化列表
 
           historyPage = 0;
           renderHistoryPage();
@@ -256,19 +291,30 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       if (!Array.isArray(currentPageItems)) throw new Error('无效的数据格式');
       for (const item of currentPageItems) {
-        if (!item || !item.url) continue;
+        if (!item) continue;
+
+        // 处理分组标题
+        if (item.type === 'group') {
+          const groupTitle = document.createElement('div');
+          groupTitle.className = 'history-date-header';
+          groupTitle.textContent = item.groupKey;
+          historyContainer.insertBefore(groupTitle, loading);
+          continue;
+        }
+
+        // 处理普通历史记录项
+        if (!item.url) continue;
         try {
           const base64Icon = await getFaviconUrl(item.url);
           const link = document.createElement('a');
           link.className = 'history-item';
           link.href = item.url;
           link.target = '_blank';
-          const visitTime = new Date(item.lastVisitTime);
-          const formattedTime = visitTime.toLocaleString();
+          const { displayTime } = formatHistoryTime(item.lastVisitTime);
           link.innerHTML = `
             <img src="${base64Icon}" class="favicon" alt="图标">
             <span class="link-text">${item.title || item.url}</span>
-            <span class="history-time">${formattedTime}</span>
+            <span class="history-time">${displayTime}</span>
           `;
           historyContainer.insertBefore(link, loading);
         } catch (error) {
@@ -277,12 +323,11 @@ document.addEventListener('DOMContentLoaded', () => {
           link.className = 'history-item';
           link.href = item.url;
           link.target = '_blank';
-          const visitTime = new Date(item.lastVisitTime);
-          const formattedTime = visitTime.toLocaleString();
+          const { displayTime } = formatHistoryTime(item.lastVisitTime);
           link.innerHTML = `
             <i class="fas fa-clock favicon" style="width:16px; height:16px; display:inline-block; text-align:center;"></i>
             <span class="link-text">${item.title || item.url}</span>
-            <span class="history-time">${formattedTime}</span>
+            <span class="history-time">${displayTime}</span>
           `;
           historyContainer.insertBefore(link, loading);
         }
@@ -292,7 +337,9 @@ document.addEventListener('DOMContentLoaded', () => {
       hasMoreHistory = endIndex < allHistory.length;
       isLoadingHistory = false;
       if (!hasMoreHistory && allHistory.length > 0) {
-        showSuccess(`已加载全部 ${allHistory.length} 条历史记录`);
+        // 计算实际的历史记录数量（排除分组标题）
+        const actualHistoryCount = allHistory.filter(item => !item.type).length;
+        showSuccess(`已加载全部 ${actualHistoryCount} 条历史记录`);
       }
     } catch (error) {
       logError(error, '渲染历史记录页面');

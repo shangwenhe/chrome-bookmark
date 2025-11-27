@@ -409,12 +409,12 @@ document.addEventListener("DOMContentLoaded", () => {
         e.preventDefault();
         break;
       case "Enter":
-        // if (activeSearchIndex >= 0 && searchResultsList.length > 0) {
-        //   const activeItem = searchResults.querySelector('.search-result-item.active');
-        //   if (activeItem) {
-        //     activeItem.click();
-        //   }
-        // }
+        if (activeSearchIndex >= 0 && searchResultsList.length > 0) {
+          const activeItem = searchResults.querySelector('.search-result-item.active');
+          if (activeItem) {
+            activeItem.click();
+          }
+        }
         e.preventDefault();
         break;
       case "ArrowUp":

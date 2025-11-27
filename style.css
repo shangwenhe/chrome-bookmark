@@ -77,7 +77,7 @@ h1 {
 .bookmark-folder-title {
   grid-column: 1 / -1;
   font-weight: bold;
-  color: #2d3748;
+  color: #696969;
   margin: 8px 0;
   padding-left: 10px;
   border-left: 3px solid #4299e1;
@@ -91,7 +91,7 @@ h1 {
   padding: 8px 12px;
   border-radius: 6px;
   text-decoration: none;
-  color: #4a5568;
+  color: #333;
   background: #fff;
   transition: all 0.2s;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
@@ -120,6 +120,7 @@ h1 {
   margin-right: 10px;
   object-fit: contain;
   flex-shrink: 0;
+  color: #5f5f5f;
 }
 
 .history-time {
@@ -300,13 +301,11 @@ h1 {
 .history-date-header {
   grid-column: 1 / -1; /* 让标题占据整行 */
   font-weight: bold;
-  color: #2d3748;
-  margin: 15px 0 8px 0; /* 上下外边距，与书签文件夹标题区分开 */
-  padding: 8px 10px;
-  background-color: #e8f4f8; /* 轻微的背景色 */
-  border-left: 3px solid #38b2ac; /* 不同的边框颜色，例如青色 */
+  color: #696969;
+  margin: 8px 0 ; /* 上下外边距，与书签文件夹标题区分开 */
+  padding: 0px 10px;
+  border-left: 3px solid #4299e1; /* 不同的边框颜色，例如青色 */
   font-size: 15px;
-  border-radius: 4px; /* 轻微的圆角 */
 }
 
 /* 搜索弹窗样式 - 调整放大 */
