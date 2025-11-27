@@ -9,10 +9,8 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
-
     <meta charset="utf-8" />
     <meta name="color-scheme" content="light dark" />
-    
   </head>
   <body>
     <div class="site-container">
@@ -42,35 +40,28 @@
     <!-- Vimium 所需的 DOM 元素 -->
     <div id="vimium-hints"></div>
 
+    <!-- 新增：搜索弹窗 -->
+    <div id="search-modal" class="search-modal">
+      <div class="search-modal-content">
+        <div class="search-input-wrapper">
+          <i class="fas fa-search search-icon"></i>
+          <input 
+            type="text" 
+            id="search-input" 
+            class="search-input" 
+            placeholder="搜索书签/历史记录 (按 ESC 关闭，↑↓ 导航，Enter 打开)"
+            autocomplete="off"
+          />
+          <button id="search-close" class="search-close-btn">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div id="search-results" class="search-results"></div>
+      </div>
+    </div>
+
     <!-- 脚本引入 -->
     <script src="script.js"></script>
     <script src="vimium.js"></script>
-
-    <a id="bgLink" aria-hidden="true"></a>
-    <template id="bodyTemplate">
-      <div id="snapshot-banner">
-        <div class="banner-box">
-          <span class="banner-body" data-i="s1"></span>
-          <span
-            class="banner-close"
-            role="button"
-            tabindex="0"
-            data-i="Close-t"
-          >
-            <svg class="btn_svg" viewBox="0 0 20 20">
-              <path d="M6 6l8 8zM6 14L14 6"></path>
-            </svg>
-          </span>
-        </div>
-      </div>
-      <img id="shownImage" tabindex="0" />
-      <div id="shownText">
-        <div id="textBox">
-          <span id="textTip"></span>
-          <span class="colon" data-colon=": "></span>
-          <span id="textBody" tabindex="0"></span>
-        </div>
-      </div>
-    </template>
   </body>
 </html>

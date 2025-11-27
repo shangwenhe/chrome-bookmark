@@ -1,13 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
   const bookmarkContainer = document.getElementById('bookmarks-container');
   const historyContainer = document.getElementById('history-container');
-  
+
   // 配置常量
-  const ITEMS_PER_PAGE = 50; // 每页显示的项目数
+  const ITEMS_PER_PAGE = 100; // 每页显示的项目数
   const SCROLL_THRESHOLD = 200; // 滚动加载阈值（像素）
   const NOTIFICATION_DURATION = 3000; // 通知显示时间（毫秒）
-  const FAVICON_CACHE_PREFIX = 'favicon_cache_';
-  const MAX_CACHE_ITEMS = 200; // 最大缓存数量
 
   // 存储数据和状态
   let allBookmarks = [];
@@ -18,6 +16,13 @@ document.addEventListener('DOMContentLoaded', () => {
   let isLoadingHistory = false;
   let hasMoreBookmarks = true;
   let hasMoreHistory = true;
+
+  // --- 新增：暴露全局搜索数据 ---
+  window.searchData = {
+    getBookmarks: () => [...allBookmarks],
+    getHistory: () => [...allHistory],
+    getFaviconUrl: getFaviconUrl
+  };
 
   // --- 缓存管理函数 ---
   function getHostname(url) {
@@ -32,70 +37,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
   }
 
-  function getCachedFavicon(hostname) {
-      if (!hostname) return null;
-      return localStorage.getItem(`${FAVICON_CACHE_PREFIX}${hostname}`);
-  }
-
-  function cacheFavicon(hostname, base64) {
-      if (!hostname || !base64) return;
-      localStorage.setItem(`${FAVICON_CACHE_PREFIX}${hostname}`, base64);
-      localStorage.setItem(`${FAVICON_CACHE_PREFIX}${hostname}_ts`, Date.now().toString());
-      cleanupOldCache();
-  }
-
-  function cleanupOldCache() {
-      let cacheKeys = [];
-      for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key.startsWith(FAVICON_CACHE_PREFIX) && !key.endsWith('_ts')) {
-              const tsKey = `${key}_ts`;
-              const timestamp = parseInt(localStorage.getItem(tsKey) || '0', 10);
-              cacheKeys.push({ key, timestamp });
-          }
-      }
-
-      if (cacheKeys.length > MAX_CACHE_ITEMS) {
-          cacheKeys.sort((a, b) => a.timestamp - b.timestamp);
-          const itemsToDelete = cacheKeys.length - MAX_CACHE_ITEMS;
-          for (let i = 0; i < itemsToDelete; i++) {
-              const keyToDelete = cacheKeys[i].key;
-              localStorage.removeItem(keyToDelete);
-              localStorage.removeItem(`${keyToDelete}_ts`);
-          }
-      }
-  }
-
   // --- Favicon 获取函数 (带缓存) ---
-function getFaviconUrl(url) {
-    return new Promise((resolve, reject) => {
-        const hostname = getHostname(url);
-        reject(new Error( "获取 Favicon 失败"));
-        // resolve(`http://icon.bqb.cool/get.php?url=${hostname}`)
-        // const cachedBase64 = getCachedFavicon(hostname);
-        // if (cachedBase64) {
-        //     // 1. 缓存命中，直接返回
-        //     resolve(cachedBase64);
-        //     return;
-        // }
-       
-        // // 2. 缓存未命中，向后台脚本发送请求
-        // chrome.runtime.sendMessage(
-        //     { action: 'fetchFavicon', url: url },
-        //     (response) => {
-        //         if (response && response.success) {
-        //             // 3. 请求成功，存入缓存后返回
-        //             cacheFavicon(hostname, response.base64);
-        //             resolve(response.base64);
-        //         } else {
-        //             console.warn(`获取图标失败 for ${url}:`, response.error);
-        //             // 4. 请求失败，reject 让调用方处理
-        //             reject(new Error(response.error || "获取 Favicon 失败"));
-        //         }
-        //     }
-        // );
-    });
-}
+  function getFaviconUrl(url) {
+      return new Promise((resolve, reject) => {
+          const hostname = getHostname(url);
+          reject(new Error( "获取 Favicon 失败"));
+      });
+  }
 
   // --- 辅助函数 ---
   function setupGlobalErrorHandler() {
@@ -127,7 +75,7 @@ function getFaviconUrl(url) {
     }, NOTIFICATION_DURATION);
     return notification;
   }
-  
+
   function showSuccess(message) { createNotification(message, 'success'); }
   function showError(message) { createNotification(message, 'error'); }
   function showWarning(message) { createNotification(message, 'warning'); }
@@ -135,7 +83,7 @@ function getFaviconUrl(url) {
   function logError(error, context = '') {
     console.error(`[${context}] 错误:`, error);
   }
-  
+
   function showLoading(element) {
     const loadingElement = document.createElement('div');
     loadingElement.className = 'loading-indicator';
@@ -178,22 +126,22 @@ function getFaviconUrl(url) {
           if (!tree || !tree.length) throw new Error('书签数据为空');
           allBookmarks = collectAllBookmarks(tree[0]);
           allBookmarks.reverse();
-          
+
           const folderMap = {};
           allBookmarks.forEach(bookmark => {
             if (!folderMap[bookmark.folderPath]) folderMap[bookmark.folderPath] = [];
             folderMap[bookmark.folderPath].push(bookmark);
           });
-          
+
           allBookmarks = [];
           Object.keys(folderMap).forEach(folderPath => {
             if (folderPath) allBookmarks.push({ type: 'folder', folderPath });
             allBookmarks = [...allBookmarks, ...folderMap[folderPath]];
           });
-          
+
           bookmarkPage = 0;
           renderBookmarksPage();
-          
+
           if (allBookmarks.length === 0) {
             bookmarkContainer.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">暂无书签数据</p>';
             showInfo('您当前没有保存的书签');
@@ -220,7 +168,7 @@ function getFaviconUrl(url) {
     const startIndex = bookmarkPage * ITEMS_PER_PAGE;
     const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, allBookmarks.length);
     const currentPageItems = allBookmarks.slice(startIndex, endIndex);
-    
+
     try {
       if (!Array.isArray(currentPageItems)) throw new Error('无效的数据格式');
       for (const item of currentPageItems) {
@@ -274,10 +222,10 @@ function getFaviconUrl(url) {
           allHistory = items
             .filter(item => item && item.lastVisitTime >= threeDaysAgo && item.url)
             .sort((a, b) => b.lastVisitTime - a.lastVisitTime);
-        
+
           historyPage = 0;
           renderHistoryPage();
-        
+
           if (allHistory.length === 0) {
             historyContainer.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">暂无最近三天的历史记录</p>';
             showInfo('最近三天内没有浏览历史记录');
@@ -304,7 +252,7 @@ function getFaviconUrl(url) {
     const startIndex = historyPage * ITEMS_PER_PAGE;
     const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, allHistory.length);
     const currentPageItems = allHistory.slice(startIndex, endIndex);
-    
+
     try {
       if (!Array.isArray(currentPageItems)) throw new Error('无效的数据格式');
       for (const item of currentPageItems) {
