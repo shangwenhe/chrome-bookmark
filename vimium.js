@@ -1,27 +1,27 @@
 // vimium.js
-document.addEventListener('DOMContentLoaded', () => {
-  const hintsContainer = document.getElementById('vimium-hints');
-  const searchModal = document.getElementById('search-modal');
-  const searchInput = document.getElementById('search-input');
-  const searchResults = document.getElementById('search-results');
-  const searchCloseBtn = document.getElementById('search-close');
+document.addEventListener("DOMContentLoaded", () => {
+  const hintsContainer = document.getElementById("vimium-hints");
+  const searchModal = document.getElementById("search-modal");
+  const searchInput = document.getElementById("search-input");
+  const searchResults = document.getElementById("search-results");
+  const searchCloseBtn = document.getElementById("search-close");
 
   let isHintMode = false;
   let currentHints = [];
-  let userInput = '';
+  let userInput = "";
   let isSearchMode = false;
   let searchResultsList = [];
   let activeSearchIndex = -1;
 
   // 配置
-  const CHAR_SET = 'sadjklewcmpgh';
+  const CHAR_SET = "sadjklewcmpgh";
   const HINT_BASE = CHAR_SET.length;
-  const HINT_START_INDEX = 13*3;
+  const HINT_START_INDEX = 13 * 3;
 
   // 生成提示字符
   const generateHintByIndex = (index) => {
-    if (index < 0) return '';
-    let hint = '';
+    if (index < 0) return "";
+    let hint = "";
     do {
       const charIndex = index % HINT_BASE;
       hint = CHAR_SET[charIndex] + hint;
@@ -32,28 +32,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 清除提示
   const clearHints = () => {
-    hintsContainer.innerHTML = '';
+    hintsContainer.innerHTML = "";
     currentHints = [];
-    userInput = '';
+    userInput = "";
     isHintMode = false;
-    document.body.style.cursor = 'default';
+    document.body.style.cursor = "default";
   };
 
   // 渲染提示
   const renderHints = () => {
-    hintsContainer.innerHTML = '';
+    hintsContainer.innerHTML = "";
     const inputLen = userInput.length;
 
-    currentHints.forEach(hintObj => {
-      const hintElement = document.createElement('div');
-      hintElement.className = 'vimium-hint';
+    currentHints.forEach((hintObj) => {
+      const hintElement = document.createElement("div");
+      hintElement.className = "vimium-hint";
       const dimPart = hintObj.fullHint.substring(0, inputLen);
       const normalPart = hintObj.fullHint.substring(inputLen);
       hintElement.innerHTML = `<span class="dim">${dimPart.toUpperCase()}</span><span>${normalPart.toUpperCase()}</span>`;
 
+      // 重新获取元素位置（避免渲染延迟导致的位置错误）
       const rect = hintObj.element.getBoundingClientRect();
-      hintElement.style.top = `${rect.top }px`;
+      // 确保提示在可视区域内
+      if (rect.width <= 0 || rect.height <= 0) return;
+
+      // 修正提示位置，适配fixed定位的搜索弹窗
+      hintElement.style.top = `${rect.top}px`;
       hintElement.style.left = `${rect.left}px`;
+      hintElement.style.zIndex = "999999"; // 强制最高层级
 
       hintsContainer.appendChild(hintElement);
     });
@@ -61,63 +67,114 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 滚动处理
   const handleScroll = (e) => {
-    if (isHintMode || isSearchMode || document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
+    if (
+      isHintMode ||
+      isSearchMode ||
+      document.activeElement.tagName === "INPUT" ||
+      document.activeElement.tagName === "TEXTAREA"
+    ) {
       return;
     }
     const key = e.key.toLowerCase();
     const scrollStep = window.innerHeight * 0.9;
-    if (key === 'j') {
+    if (key === "j") {
       window.scrollBy(0, scrollStep);
       e.preventDefault();
-    } else if (key === 'k') {
+    } else if (key === "k") {
       window.scrollBy(0, -scrollStep);
       e.preventDefault();
     }
   };
 
-  // 进入提示模式（支持搜索结果）
+  // 检查元素是否真正可见
+  const isElementVisible = (element) => {
+    if (!element) return false;
+    // 检查元素本身是否隐藏
+    if (
+      element.style.display === "none" ||
+      element.style.visibility === "hidden"
+    )
+      return false;
+    // 检查计算样式
+    const computedStyle = window.getComputedStyle(element);
+    if (
+      computedStyle.display === "none" ||
+      computedStyle.visibility === "hidden"
+    )
+      return false;
+    // 检查BoundingClientRect
+    const rect = element.getBoundingClientRect();
+    return (
+      rect.width > 0 &&
+      rect.height > 0 &&
+      rect.top >= 0 &&
+      rect.left >= 0 &&
+      rect.bottom <= window.innerHeight &&
+      rect.right <= window.innerWidth
+    );
+  };
+
+  // 进入提示模式（支持搜索结果和关闭按钮）
   const enterHintMode = () => {
     if (isHintMode) return;
 
     isHintMode = true;
-    document.body.style.cursor = 'crosshair';
-    userInput = '';
+    document.body.style.cursor = "crosshair";
+    userInput = "";
 
-    // 失焦搜索框（关键修复1）
+    // 失焦搜索框
     if (document.activeElement === searchInput) {
       searchInput.blur();
     }
 
+    // 增加延迟，确保搜索弹窗元素完全渲染
     setTimeout(() => {
-      // 选择器包含搜索结果中的所有链接（关键修复2）
-      const links = document.querySelectorAll(
-        '#search-results .search-result-item, .bookmark-link, .history-item'
-      );
+      let targetElements = [];
 
-      if (links.length === 0) {
+      // 优先处理搜索弹窗内的元素（如果搜索模式激活）
+      if (isSearchMode) {
+        // 单独获取搜索弹窗内的元素，确保优先级
+        const searchCloseBtnEl = document.getElementById("search-close");
+        const searchResultItems = document.querySelectorAll(
+          "#search-results .search-result-item"
+        );
+
+        // 先添加关闭按钮（如果可见）
+        if (searchCloseBtnEl && isElementVisible(searchCloseBtnEl)) {
+          targetElements.push(searchCloseBtnEl);
+        }
+        // 再添加搜索结果项（过滤不可见的）
+        Array.from(searchResultItems).forEach((item) => {
+          if (isElementVisible(item)) {
+            targetElements.push(item);
+          }
+        });
+      }
+
+      // 补充书签和历史记录元素（非搜索模式时显示）
+      if (!targetElements.length) {
+        const normalElements = document.querySelectorAll(
+          ".bookmark-link, .history-item"
+        );
+        targetElements = Array.from(normalElements).filter((el) =>
+          isElementVisible(el)
+        );
+      }
+
+      // 生成提示（确保有元素才继续）
+      if (targetElements.length === 0) {
         clearHints();
         return;
       }
 
-      currentHints = Array.from(links).map((link, index) => {
+      currentHints = targetElements.map((link, index) => {
         const fullHint = generateHintByIndex(index + HINT_START_INDEX);
         return { element: link, fullHint: fullHint };
-      }).filter(hintObj => {
-        try {
-          const rect = hintObj.element.getBoundingClientRect();
-          return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < window.innerHeight;
-        } catch (e) {
-          return false;
-        }
       });
 
+      // 强制渲染提示
       renderHints();
-
-      if (currentHints.length === 0) {
-        clearHints();
-      }
-
-    }, 0);
+    }, 100);
   };
 
   // 处理提示输入
@@ -126,13 +183,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const key = e.key.toLowerCase();
 
     // 仅关闭链接提示，不影响搜索弹窗
-    if (key === 'escape') {
+    if (key === "escape") {
       clearHints();
       e.preventDefault();
       return;
     }
 
-    if (key === 'backspace') {
+    if (key === "backspace") {
       if (userInput.length > 0) {
         userInput = userInput.slice(0, -1);
         renderHints();
@@ -148,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const newInput = userInput + key;
-    const matchedHints = currentHints.filter(hintObj => {
+    const matchedHints = currentHints.filter((hintObj) => {
       return hintObj.fullHint.startsWith(newInput);
     });
 
@@ -157,15 +214,22 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const exactMatch = matchedHints.find(hintObj => hintObj.fullHint === newInput);
+    const exactMatch = matchedHints.find(
+      (hintObj) => hintObj.fullHint === newInput
+    );
     if (exactMatch) {
       clearHints();
-      // 处理搜索结果项的点击（关键修复3）
-      if (exactMatch.element.classList.contains('search-result-item')) {
+      // 处理不同元素的点击逻辑
+      if (exactMatch.element.id === "search-close") {
+        // 点击关闭按钮
+        exitSearchMode();
+      } else if (exactMatch.element.classList.contains("search-result-item")) {
+        // 点击搜索结果项
         const url = exactMatch.element.href;
-        window.open(url, '_blank');
+        window.open(url, "_blank");
         exitSearchMode();
       } else {
+        // 点击书签/历史记录
         exactMatch.element.click();
       }
       e.preventDefault();
@@ -182,10 +246,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // 进入搜索模式
   const enterSearchMode = () => {
     if (isSearchMode || isHintMode) return;
-    
+
     isSearchMode = true;
-    searchModal.classList.add('active');
-    searchInput.value = '';
+    searchModal.classList.add("active");
+    searchInput.value = "";
     searchResultsList = [];
     activeSearchIndex = -1;
     searchInput.focus();
@@ -195,12 +259,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // 退出搜索模式
   const exitSearchMode = () => {
     if (!isSearchMode) return;
-    
+
     isSearchMode = false;
-    searchModal.classList.remove('active');
+    searchModal.classList.remove("active");
     searchInput.blur();
     searchResultsList = [];
     activeSearchIndex = -1;
+    clearHints();
   };
 
   // 搜索书签和历史记录
@@ -216,28 +281,49 @@ document.addEventListener('DOMContentLoaded', () => {
     const history = window.searchData?.getHistory() || [];
 
     const matchedBookmarks = bookmarks
-      .filter(item => item.type !== 'folder' && item.url)
-      .filter(item => {
-        const title = (item.title || '').toLowerCase();
+      .filter((item) => item.type !== "folder" && item.url)
+      .map((item) => {
+        const title = (item.title || "").toLowerCase();
         const url = item.url.toLowerCase();
-        const folder = (item.folderPath || '').toLowerCase();
-        return title.includes(lowerQuery) || url.includes(lowerQuery) || folder.includes(lowerQuery);
+        const folder = (item.folderPath || "").toLowerCase();
+
+        // 分割关键词并过滤空值
+        const keywords = lowerQuery
+          .trim()
+          .split(/\s+/)
+          .filter((keyword) => keyword.length > 0);
+
+        if (keywords.length === 0) {
+          return { ...item, type: "bookmark", matchScore: 0 };
+        }
+
+        // 计算匹配分数（匹配的关键词数量 + 匹配位置权重）
+        let matchScore = 0;
+        keywords.forEach((keyword) => {
+          const inTitle = title.includes(keyword) ? 3 : 0; // 标题匹配权重最高
+          const inUrl = url.includes(keyword) ? 2 : 0; // URL匹配权重次之
+          const inFolder = folder.includes(keyword) ? 1 : 0; // 文件夹匹配权重最低
+
+          if (inTitle + inUrl + inFolder > 0) {
+            matchScore += inTitle + inUrl + inFolder;
+          }
+        });
+
+        return { ...item, type: "bookmark", matchScore };
       })
-      .map(item => ({
-        ...item,
-        type: 'bookmark'
-      }));
+      .filter((item) => item.matchScore > 0) // 过滤无匹配的结果
+      .sort((a, b) => b.matchScore - a.matchScore); // 按匹配度排序（高匹配度在前）
 
     const matchedHistory = history
-      .filter(item => item.url)
-      .filter(item => {
-        const title = (item.title || '').toLowerCase();
+      .filter((item) => item.url)
+      .filter((item) => {
+        const title = (item.title || "").toLowerCase();
         const url = item.url.toLowerCase();
         return title.includes(lowerQuery) || url.includes(lowerQuery);
       })
-      .map(item => ({
+      .map((item) => ({
         ...item,
-        type: 'history'
+        type: "history",
       }));
 
     searchResultsList = [...matchedBookmarks, ...matchedHistory];
@@ -246,42 +332,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 渲染搜索结果
   const renderSearchResults = async (results) => {
-    searchResults.innerHTML = '';
+    searchResults.innerHTML = "";
 
     if (results.length === 0) {
-      const noResults = document.createElement('div');
-      noResults.className = 'search-no-results';
-      noResults.textContent = searchInput.value ? '未找到匹配的结果' : '请输入关键词搜索书签或历史记录';
+      const noResults = document.createElement("div");
+      noResults.className = "search-no-results";
+      noResults.textContent = searchInput.value
+        ? "未找到匹配的结果"
+        : "请输入关键词搜索书签或历史记录";
       searchResults.appendChild(noResults);
       return;
     }
 
     for (let i = 0; i < results.length; i++) {
       const item = results[i];
-      const resultItem = document.createElement('a');
-      resultItem.className = `search-result-item ${i === activeSearchIndex ? 'active' : ''}`;
+      const resultItem = document.createElement("a");
+      resultItem.className = `search-result-item ${
+        i === activeSearchIndex ? "active" : ""
+      }`;
       resultItem.href = item.url;
-      resultItem.target = '_blank';
-      
-      let faviconHtml = '';
+      resultItem.target = "_blank";
+
+      let faviconHtml = "";
       try {
         await window.searchData.getFaviconUrl(item.url);
-        faviconHtml = `<i class="fas fa-${item.type === 'bookmark' ? 'bookmark' : 'clock'} favicon" style="width:16px; height:16px; display:inline-block; text-align:center;"></i>`;
+        faviconHtml = `<i class="fas fa-${
+          item.type === "bookmark" ? "bookmark" : "clock"
+        } favicon" style="width:16px; height:16px; display:inline-block; text-align:center;"></i>`;
       } catch (e) {
-        faviconHtml = `<i class="fas fa-${item.type === 'bookmark' ? 'bookmark' : 'clock'} favicon" style="width:16px; height:16px; display:inline-block; text-align:center;"></i>`;
+        faviconHtml = `<i class="fas fa-${
+          item.type === "bookmark" ? "bookmark" : "clock"
+        } favicon" style="width:16px; height:16px; display:inline-block; text-align:center;"></i>`;
       }
 
       resultItem.innerHTML = `
         ${faviconHtml}
         <span class="result-text">${item.title || item.url}</span>
-        <span class="result-type">${item.type === 'bookmark' ? '书签' : '历史记录'}</span>
+        <span class="result-type">${
+          item.type === "bookmark" ? "书签" : "历史记录"
+        }</span>
       `;
 
-      resultItem.addEventListener('click', () => {
+      resultItem.addEventListener("click", () => {
         exitSearchMode();
       });
 
-      resultItem.addEventListener('mouseenter', () => {
+      resultItem.addEventListener("mouseenter", () => {
         activeSearchIndex = i;
         updateActiveSearchItem();
       });
@@ -292,40 +388,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 更新激活的搜索项
   const updateActiveSearchItem = () => {
-    const items = searchResults.querySelectorAll('.search-result-item');
+    const items = searchResults.querySelectorAll(".search-result-item");
     items.forEach((item, index) => {
       if (index === activeSearchIndex) {
-        item.classList.add('active');
-        item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        item.classList.add("active");
+        item.scrollIntoView({ block: "nearest", behavior: "smooth" });
       } else {
-        item.classList.remove('active');
+        item.classList.remove("active");
       }
     });
   };
 
-  // 处理搜索键盘输入（修复ESC失焦）
+  // 处理搜索键盘输入
   const handleSearchInput = (e) => {
     if (!isSearchMode) return;
 
     switch (e.key) {
-      // 关键修复4：ESC仅失焦输入框，不关闭弹窗
-      case 'Escape':
+      case "Escape":
         searchInput.blur();
         e.preventDefault();
         break;
-      case 'Enter':
+      case "Enter":
+        // if (activeSearchIndex >= 0 && searchResultsList.length > 0) {
+        //   const activeItem = searchResults.querySelector('.search-result-item.active');
+        //   if (activeItem) {
+        //     activeItem.click();
+        //   }
+        // }
         e.preventDefault();
         break;
-      case 'ArrowUp':
+      case "ArrowUp":
         e.preventDefault();
         activeSearchIndex = Math.max(0, activeSearchIndex - 1);
         updateActiveSearchItem();
         break;
-      case 'ArrowDown':
+      case "ArrowDown":
         e.preventDefault();
-        activeSearchIndex = Math.min(searchResultsList.length - 1, activeSearchIndex + 1);
+        activeSearchIndex = Math.min(
+          searchResultsList.length - 1,
+          activeSearchIndex + 1
+        );
         updateActiveSearchItem();
         break;
+      // 移除对F键的拦截，允许正常输入
       default:
         clearTimeout(window.searchDebounce);
         window.searchDebounce = setTimeout(() => {
@@ -336,74 +441,63 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // 搜索事件绑定
-  searchInput.addEventListener('input', () => {
+  searchInput.addEventListener("input", () => {
     searchItems(searchInput.value);
   });
 
-  // 仅保留点击关闭按钮和点击外部关闭
-  searchCloseBtn.addEventListener('click', exitSearchMode);
-  // searchModal.addEventListener('click', (e) => {
-  //   if (e.target === searchModal) {
-  //     exitSearchMode();
-  //   }
-  // });
+  // 关闭按钮点击事件
+  searchCloseBtn.addEventListener("click", exitSearchMode);
 
-  // 全局键盘事件（核心修复）
-  document.addEventListener('keydown', (e) => {
+  // 全局键盘事件（核心修复：搜索框聚焦时允许输入f）
+  document.addEventListener("keydown", (e) => {
+    // 跳过功能键/修饰键
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+
     const isSearchInputFocused = document.activeElement === searchInput;
-    
-    // 输入框聚焦时的处理逻辑
-    if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
-      if (isSearchMode) {
-        handleSearchInput(e);
-      }
-      // 关键修复5：输入框聚焦时按F键，先失焦再触发提示模式
-      if (e.key.toLowerCase() === 'f' && isSearchMode) {
-        searchInput.blur();
-        enterHintMode();
-        e.preventDefault();
-        return;
-      }
-      return;
-    }
-    
-    if (e.altKey || e.ctrlKey || e.metaKey) {
-      return;
-    }
-
     const key = e.key.toLowerCase();
 
+    // 提示模式优先处理
     if (isHintMode) {
       handleHintInput(e);
       return;
     }
 
-    if (isSearchMode) {
-      handleSearchInput(e);
+    // 🔥 核心修复：搜索框聚焦时，允许正常输入所有字符（包括f）
+    if (isSearchInputFocused) {
+      // 仅处理方向键/回车/ESC等功能键，不拦截普通字符输入
+      if (["arrowup", "arrowdown", "enter", "escape"].includes(key)) {
+        handleSearchInput(e);
+      }
+      // 搜索框聚焦时，按F键+修饰键（如Shift+F）才触发提示模式（可选）
+      // 纯F键允许正常输入
       return;
     }
 
-    handleScroll(e);
+    // 搜索模式下（输入框未聚焦）
+    if (isSearchMode) {
+      handleSearchInput(e);
+      // 输入框未聚焦时，按F键触发提示模式
+      if (key === "f") {
+        enterHintMode();
+        e.preventDefault();
+        return;
+      }
+    }
 
-    if (key === 'f') {
+    // 普通模式下的操作
+    handleScroll(e);
+    if (key === "f") {
       enterHintMode();
       e.preventDefault();
-    } else if (key === '/') {
+    } else if (key === "/") {
       enterSearchMode();
       e.preventDefault();
     }
   });
 
-  // 点击空白处关闭提示
-  // document.addEventListener('click', (e) => {
-  //   if (isHintMode && (e.target === document.body || e.target.classList.contains('site-container') || e.target.classList.contains('flex-container') || e.target.classList.contains('content-container'))) {
-  //     clearHints();
-  //   }
-  // });
-
   // 滚动时关闭提示
   let scrollTimeout;
-  window.addEventListener('scroll', () => {
+  window.addEventListener("scroll", () => {
     if (isHintMode) {
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(() => {
@@ -412,5 +506,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  console.log('Vimium 功能已加载。按 \'f\' 打开链接提示，按 \'j/k\' 上下滚动，按 \'/\' 打开搜索。');
+  console.log(
+    "Vimium 功能已加载。按 'f' 打开链接提示，按 'j/k' 上下滚动，按 '/' 打开搜索。"
+  );
 });
