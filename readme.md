@@ -29,7 +29,7 @@ CSS3
 JavaScript (ES6+)
 Chrome Extension API
 文件结构
-
+```txt
 .
 ├── index.html # 主页面
 ├── script.js # 主要业务逻辑
@@ -37,6 +37,7 @@ Chrome Extension API
 ├── style.css # 样式文件
 ├── manifest.json # 扩展配置
 └── README.md # 说明文档
+```
 版权说明
 
 本项目为开源项目，欢迎贡献和改进。
