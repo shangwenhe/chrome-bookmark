@@ -324,8 +324,8 @@ document.addEventListener('DOMContentLoaded', () => {
           link.href = item.url;
           link.target = '_blank';
           const { displayTime } = formatHistoryTime(item.lastVisitTime);
+          // <i class="fas fa-clock favicon" style="width:16px; height:16px; display:inline-block; text-align:center;"></i>
           link.innerHTML = `
-            <i class="fas fa-clock favicon" style="width:16px; height:16px; display:inline-block; text-align:center;"></i>
             <span class="link-text">${item.title || item.url}</span>
             <span class="history-time">${displayTime}</span>
           `;
@@ -360,8 +360,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <span class="link-text">${title || url}</span>
       `;
     } else {
+      // <i class="fas fa-bookmark favicon" style="width:16px; height:16px; display:inline-block; text-align:center;"></i>
       link.innerHTML = `
-        <i class="fas fa-bookmark favicon" style="width:16px; height:16px; display:inline-block; text-align:center;"></i>
         <span class="link-text">${title || url}</span>
       `;
     }
